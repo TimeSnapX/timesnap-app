@@ -1,7 +1,7 @@
 // TimeSnap service worker — network-first, scope /timesnap-app/
-const CACHE = 'timesnap-v4';
+const CACHE = 'timesnap-v5';
 const SCOPE = '/timesnap-app/';
-const PRECACHE = [SCOPE, SCOPE + 'index.html', SCOPE + 'manifest.webmanifest', SCOPE + 'icons/icon-192.png', SCOPE + 'icons/icon-512.png'];
+const PRECACHE = [SCOPE, SCOPE + 'index.html', SCOPE + 'install-capture.js', SCOPE + 'manifest.webmanifest', SCOPE + 'icons/icon-192.png', SCOPE + 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

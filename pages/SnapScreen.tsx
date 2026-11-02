@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { downscaleImage } from '../services/imageUtils';
 import { useCurrency } from '../stores/currencyStore';
 import { RatesNote } from '../components/CurrencyPicker';
+import { InstallBanner } from '../components/Install';
 
 export default function SnapScreen() {
   const [image, setImage] = useState<string | null>(null);
@@ -105,6 +106,8 @@ export default function SnapScreen() {
         <h1 className="text-white mb-2">Snap & Estimate</h1>
         <p className="text-ink-400">Capture any object to instantly value it using AI and convert it to sound money.</p>
       </div>
+
+      {!image && <InstallBanner />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
         

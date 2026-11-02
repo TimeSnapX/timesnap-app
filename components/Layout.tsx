@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Camera, Wallet, Map, Coins, CreditCard, HelpCircle, Eye, LayoutGrid, ChevronRight, Banknote } from 'lucide-react';
+import { X, Camera, Wallet, Map, Coins, CreditCard, HelpCircle, Eye, LayoutGrid, ChevronRight, Banknote, Download } from 'lucide-react';
 import { CurrencyChip, CurrencyPicker } from './CurrencyPicker';
+import { InstallChip, InstallHintSheet, useInstall } from './Install';
 import { useCurrencyStore, useCurrency } from '../stores/currencyStore';
 
 const navItems = [
@@ -40,6 +41,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const loadRates = useCurrencyStore((s) => s.loadRates);
   const openPicker = useCurrencyStore((s) => s.openPicker);
   const { chosen } = useCurrency();
+  const { installed, install } = useInstall();
   useEffect(() => {
     loadRates();
     const t = setInterval(() => loadRates(), 60 * 60 * 1000);
@@ -53,7 +55,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-white/[0.06] bg-ink-950/60 backdrop-blur-xl p-4 sticky top-0 h-screen overflow-y-auto">
         <div className="mb-6 px-3 pt-2"><Logo /></div>
-        <div className="px-3 mb-6"><CurrencyChip /></div>
+        <div className="px-3 mb-6 flex gap-2"><CurrencyChip /><InstallChip /></div>
         <nav className="flex-1 space-y-1" aria-label="Main">
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = isActive(path, to);
@@ -74,7 +76,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="h-14 px-4 flex items-center justify-between">
           <Logo size="sm" />
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-ink-400 uppercase tracking-widest">{current?.short}</span>
+            <InstallChip />
             <CurrencyChip />
           </div>
         </div>
@@ -127,6 +129,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <ChevronRight size={18} className="text-ink-500" />
                 </Link>
               ))}
+              {!installed && (
+                <button type="button" onClick={() => { setMoreOpen(false); install(); }}
+                  className="w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl text-gold-200 bg-gold-500/10 active:bg-gold-500/15 text-left mb-1">
+                  <span className="w-9 h-9 rounded-xl btn-gold flex items-center justify-center"><Download size={18} /></span>
+                  <span className="flex-1 font-semibold">Install app</span>
+                  <ChevronRight size={18} className="text-gold-400" />
+                </button>
+              )}
               <button type="button" onClick={() => { setMoreOpen(false); openPicker(true); }}
                 className="w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl text-ink-200 active:bg-white/[0.05] text-left">
                 <span className="w-9 h-9 rounded-xl bg-white/[0.05] flex items-center justify-center"><Banknote size={18} /></span>
@@ -139,6 +149,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
       )}
       <CurrencyPicker />
+      <InstallHintSheet />
     </div>
   );
 };
