@@ -1,0 +1,129 @@
+// TimeSnap analysis API — Cloudflare Worker port of the AI Studio server.ts
+// POST /api/analyze-image  { image: "<data URL or raw base64>" }
+//   200 -> { name, usdValue, description, tags[], valuationReasoning?, sources: [{title, uri}] }
+//   4xx/5xx -> { error: string }
+// Same model, prompt, JSON schema and Google Search grounding (with 429 fallback without search) as server.ts.
+
+const MODEL = 'gemini-3-flash-preview';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+
+const PROMPT = `Identify the main object in this image. 
+            Search for its current fair market value in USD (e.g., eBay sold listings, retail sites, or price aggregators). 
+            Be precise with the valuation based on the search results.
+            Provide a short description and 3-5 tags.
+            Also provide a brief 'valuationReasoning' explaining the price range found and why this value was chosen.
+            Return the result as JSON with keys: 'name', 'usdValue' (number), 'description', 'tags' (array of strings), and 'valuationReasoning' (string).`;
+
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    name: { type: 'STRING' },
+    usdValue: { type: 'NUMBER' },
+    description: { type: 'STRING' },
+    tags: { type: 'ARRAY', items: { type: 'STRING' } },
+    valuationReasoning: { type: 'STRING' },
+  },
+  required: ['name', 'usdValue', 'description', 'tags'],
+};
+
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const buckets = new Map(); // best-effort per-isolate rate limit
+
+function corsHeaders(origin, env) {
+  const allowed = (env.ALLOWED_ORIGINS || 'https://timesnapx.github.io').split(',').map((s) => s.trim());
+  const ok = origin && (allowed.includes(origin) || LOCAL_ORIGIN.test(origin));
+  return ok
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    : { Vary: 'Origin' };
+}
+
+function json(body, status, cors) {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors } });
+}
+
+function rateLimited(ip, env) {
+  const limit = Number(env.RATE_LIMIT_PER_MINUTE || 10);
+  const now = Date.now();
+  const b = buckets.get(ip);
+  if (!b || now - b.start > 60_000) { buckets.set(ip, { start: now, count: 1 }); return false; }
+  b.count += 1;
+  if (buckets.size > 5000) buckets.clear();
+  return b.count > limit;
+}
+
+class HttpError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+
+async function callGemini(apiKey, contents, withSearch) {
+  const body = {
+    contents: [contents],
+    generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA },
+  };
+  if (withSearch) body.tools = [{ googleSearch: {} }];
+  const res = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new HttpError(res.status, data?.error?.message || `Gemini request failed (${res.status})`);
+  return data;
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const origin = request.headers.get('Origin');
+    const cors = corsHeaders(origin, env);
+
+    if (url.pathname !== '/api/analyze-image') return json({ error: 'API endpoint not found' }, 404, cors);
+    if (request.method === 'OPTIONS') return new Response(null, { status: cors['Access-Control-Allow-Origin'] ? 204 : 403, headers: cors });
+    if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors);
+    if (origin && !cors['Access-Control-Allow-Origin']) return json({ error: 'Origin not allowed' }, 403, cors);
+
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (rateLimited(ip, env)) return json({ error: 'Too many requests. Please wait a minute and try again.' }, 429, cors);
+
+    const maxBytes = Number(env.MAX_BODY_BYTES || 8 * 1024 * 1024);
+    const declared = Number(request.headers.get('Content-Length') || 0);
+    if (declared > maxBytes) return json({ error: 'Image too large (max 8 MB).' }, 413, cors);
+
+    try {
+      const raw = await request.text();
+      if (raw.length > maxBytes) return json({ error: 'Image too large (max 8 MB).' }, 413, cors);
+      let image;
+      try { image = JSON.parse(raw)?.image; } catch { image = undefined; }
+      if (typeof image !== 'string' || !image.trim()) return json({ error: 'A base64 image string is required.' }, 400, cors);
+
+      if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY environment variable is not configured.');
+
+      const m = image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s);
+      const mimeType = m ? m[1] : 'image/jpeg';
+      const cleanBase64 = m ? m[2] : image.replace(/^data:[^;]+;base64,/, '');
+
+      const contents = { role: 'user', parts: [{ inlineData: { mimeType, data: cleanBase64 } }, { text: PROMPT }] };
+
+      let response;
+      try {
+        response = await callGemini(env.GEMINI_API_KEY, contents, true);
+      } catch (e) {
+        if (e.status === 429) response = await callGemini(env.GEMINI_API_KEY, contents, false);
+        else throw e;
+      }
+
+      const cand = response?.candidates?.[0];
+      const text = (cand?.content?.parts || []).filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');
+      if (!text) throw new Error('No response from AI');
+      const result = JSON.parse(text);
+
+      const chunks = cand?.groundingMetadata?.groundingChunks || [];
+      const sources = chunks.filter((c) => c.web?.uri).map((c) => ({ title: c.web?.title || 'Source', uri: c.web?.uri || '' }));
+      const uniqueSources = Array.from(new Map(sources.map((s) => [s.uri, s])).values());
+
+      return json({ ...result, sources: uniqueSources }, 200, cors);
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600 ? error.status : 500;
+      return json({ error: error instanceof Error ? error.message : 'Failed to analyze image.' }, status, cors);
+    }
+  },
+};

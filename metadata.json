@@ -1,0 +1,10 @@
+{
+  "name": "TimeSnap",
+  "description": "Snap any object, estimate its value using AI, and preserve it as a digital asset in your vault.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
