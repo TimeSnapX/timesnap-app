@@ -5,7 +5,7 @@ export default function VisionScreen() {
   return (
     <div className="max-w-4xl mx-auto space-y-12 py-8">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-white">The Vision</h1>
+        <h1 className="text-[2.5rem] md:text-5xl font-semibold text-white">The Vision</h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto">
           We believe everything has value. Our mission is to bridge the gap between the physical objects you own and the digital financial system of the future.
         </p>

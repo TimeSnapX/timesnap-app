@@ -32,7 +32,7 @@ export default function RoadmapScreen() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">Roadmap to Block 1,000,000</h1>
+        <h1 className="font-semibold text-white mb-4">Roadmap to Block 1,000,000</h1>
         <p className="text-gray-400 max-w-2xl mx-auto">
           We are building the ultimate bridge between physical objects and digital value. 
           Follow our journey as we march towards the historic Bitcoin Block 1,000,000.

@@ -27,7 +27,7 @@ const faqs = [
 export default function FAQScreen() {
   return (
     <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-3xl font-bold text-white mb-8 flex items-center">
+      <h1 className="font-semibold text-white mb-8 flex items-center">
         <HelpCircle className="mr-3 text-indigo-500" /> Frequently Asked Questions
       </h1>
 

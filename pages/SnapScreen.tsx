@@ -99,11 +99,11 @@ export default function SnapScreen() {
   return (
     <div className="space-y-6">
       <div className="text-center md:text-left">
-        <h1 className="text-3xl font-bold text-white mb-2">Snap & Estimate</h1>
-        <p className="text-gray-400">Capture any object to instantly value it using AI and convert it to sound money.</p>
+        <h1 className="text-white mb-2">Snap & Estimate</h1>
+        <p className="text-ink-400">Capture any object to instantly value it using AI and convert it to sound money.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
         
         {/* Left Col: Upload/Preview */}
         <div className="flex flex-col space-y-4">
@@ -127,9 +127,9 @@ export default function SnapScreen() {
           />
           <div 
             className={`
-              border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 transition-colors
-              min-h-[300px] relative overflow-hidden
-              ${image ? 'border-gray-700 bg-gray-900' : 'border-indigo-500/50 bg-indigo-500/5 hover:bg-indigo-500/10 cursor-pointer'}
+              border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-6 transition-colors
+              min-h-[320px] relative overflow-hidden
+              ${image ? 'border-transparent bg-ink-900' : 'border-gold-500/35 bg-gradient-to-b from-gold-500/[0.07] to-transparent hover:border-gold-500/60 cursor-pointer'}
             `}
             onClick={() => !loading && !image && fileInputRef.current?.click()}
           >
@@ -139,17 +139,17 @@ export default function SnapScreen() {
                 <img src={image} alt="Preview" className="absolute inset-0 w-full h-full object-contain bg-black" />
                 <button 
                   onClick={(e) => { e.stopPropagation(); setImage(null); setResult(null); }}
-                  className="absolute top-4 right-4 bg-gray-900/80 p-2 rounded-full text-white hover:bg-red-500 transition-colors"
+                  className="absolute top-3 right-3 bg-ink-950/70 backdrop-blur p-3 rounded-full text-white hover:bg-red-500 transition-colors"
                 >
                   <RefreshCw size={20} />
                 </button>
               </>
             ) : (
               <div className="text-center">
-                <div className="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20">
-                  <Camera size={32} className="text-white" />
+                <div className="btn-gold w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow rotate-3">
+                  <Camera size={30} />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Take a Photo</h3>
+                <h3 className="font-display text-2xl font-semibold text-white mb-2">Take a Photo</h3>
                 <p className="text-gray-400 text-sm max-w-xs mx-auto">
                   Click or tap here to upload an image of the item you want to value.
                 </p>
@@ -158,7 +158,7 @@ export default function SnapScreen() {
                     type="button"
                     data-testid="take-photo"
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                    className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm"
+                    className="inline-flex items-center justify-center gap-2 px-5 min-h-[52px] rounded-2xl btn-gold shadow-glow font-semibold transition-transform active:scale-[0.98]"
                   >
                     <Camera size={18} />
                     <span>Take photo</span>
@@ -167,7 +167,7 @@ export default function SnapScreen() {
                     type="button"
                     data-testid="choose-gallery"
                     onClick={(e) => { e.stopPropagation(); galleryInputRef.current?.click(); }}
-                    className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl border border-gray-600 text-gray-200 hover:text-white hover:bg-gray-800 font-semibold text-sm"
+                    className="inline-flex items-center justify-center gap-2 px-5 min-h-[52px] rounded-2xl border border-white/10 bg-white/[0.04] text-ink-100 hover:bg-white/[0.08] font-semibold transition-transform active:scale-[0.98]"
                   >
                     <Upload size={18} />
                     <span>Choose from gallery</span>
@@ -181,91 +181,101 @@ export default function SnapScreen() {
         {/* Right Col: Results */}
         <div className="flex flex-col justify-center space-y-6">
           {loading && (
-            <div className="flex flex-col items-center justify-center p-12 bg-gray-900 rounded-2xl border border-gray-800 animate-pulse">
-              <RefreshCw className="animate-spin text-indigo-500 mb-4" size={48} />
+            <div className="card flex flex-col items-center justify-center p-12">
+              <RefreshCw className="animate-spin text-gold-400 mb-4" size={44} />
               <h3 className="text-xl font-semibold text-white">Analyzing...</h3>
               <p className="text-gray-400 text-center mt-2">Searching markets and estimating value...</p>
             </div>
           )}
 
           {!loading && !result && !image && (
-             <div className="flex flex-col items-center justify-center p-12 bg-gray-900/50 rounded-2xl border border-gray-800/50 text-center">
-               <Upload size={48} className="text-gray-600 mb-4" />
-               <p className="text-gray-500">Upload an image to see the magic happen.</p>
+             <div className="hidden md:flex flex-col items-center justify-center p-12 card text-center">
+               <Upload size={44} className="text-gold-500/60 mb-4" />
+               <p className="text-ink-400">Upload an image to see the magic happen.</p>
              </div>
           )}
 
           {!loading && result && (
-            <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl">
-              <div className="border-b border-gray-700 pb-4 mb-4">
-                <h2 className="text-2xl font-bold text-white">{result.name}</h2>
-                <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mt-2">
-                  ${result.usd.toLocaleString()} <span className="text-lg text-gray-400 font-normal">USD</span>
+            <div className="card overflow-hidden animate-rise" data-testid="result-card">
+              <div className="p-5 pb-4">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-400 font-semibold mb-1">Estimated value</p>
+                <h2 className="text-2xl font-semibold text-white leading-snug">{result.name}</h2>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="font-display text-5xl font-semibold text-transparent bg-clip-text bg-gradient-to-br from-gold-100 via-gold-300 to-gold-500">
+                    ${result.usd.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-ink-400 font-medium">USD</span>
                 </div>
-                <p className="text-gray-400 mt-2 text-sm italic">{result.description}</p>
-                
-                {result.valuationReasoning && (
-                  <div className="mt-3 p-3 bg-indigo-900/20 border border-indigo-500/20 rounded-lg">
-                    <div className="flex items-center text-xs font-bold text-indigo-400 uppercase mb-1">
-                      <Info size={12} className="mr-1" /> AI Valuation Insight
-                    </div>
-                    <p className="text-xs text-indigo-200">{result.valuationReasoning}</p>
-                  </div>
-                )}
+                <p className="text-ink-300 mt-3 text-sm leading-relaxed">{result.description}</p>
 
                 {result.tags && result.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     {result.tags.map(tag => (
-                      <span key={tag} className="flex items-center text-xs bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded-md border border-indigo-500/20">
-                         <Tag size={10} className="mr-1" /> {tag}
-                      </span>
+                      <span key={tag} className="chip"><Tag size={11} /> {tag}</span>
                     ))}
                   </div>
                 )}
-                {result.sources && result.sources.length > 0 && (
-                  <div className="mt-3 text-xs">
-                    <span className="text-gray-500 block mb-1">Valuation Sources:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {result.sources.map((source, i) => (
-                        <a key={i} href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-center text-indigo-400 hover:text-indigo-300 hover:underline">
-                          <ExternalLink size={10} className="mr-1" /> {source.title.length > 30 ? source.title.substring(0, 30) + '...' : source.title}
+              </div>
+
+              {result.valuationReasoning && (
+                <div className="mx-5 mb-4 p-4 rounded-2xl bg-gold-500/[0.07] border border-gold-500/20">
+                  <div className="flex items-center text-[11px] font-semibold text-gold-300 uppercase tracking-wider mb-1.5">
+                    <Info size={13} className="mr-1.5" /> AI Valuation Insight
+                  </div>
+                  <p className="text-sm text-ink-200 leading-relaxed">{result.valuationReasoning}</p>
+                </div>
+              )}
+
+              {result.sources && result.sources.length > 0 && (
+                <div className="px-5 pb-4">
+                  <h3 className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider mb-2">Valuation Sources</h3>
+                  <ul className="rounded-2xl border border-white/[0.06] divide-y divide-white/[0.06] overflow-hidden">
+                    {result.sources.map((source, i) => (
+                      <li key={i}>
+                        <a href={source.uri} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 min-h-[48px] text-sm text-ink-200 hover:bg-white/[0.04] active:bg-white/[0.06]">
+                          <span className="w-6 h-6 rounded-full bg-ink-800 text-[11px] text-gold-300 flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                          <span className="flex-1 truncate">{source.title}</span>
+                          <ExternalLink size={14} className="text-ink-500 flex-shrink-0" />
                         </a>
-                      ))}
-                    </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="px-5 pb-2 border-t border-white/[0.06] pt-4">
+                <h3 className="text-[11px] font-semibold text-gold-400 uppercase tracking-wider mb-1">Purchasing Power Conversions</h3>
+                {isAssetsLoading ? (
+                  <p className="text-ink-400 py-3 text-sm">Loading live prices...</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-6">
+                    {assets.map(({ symbol, name }) => {
+                      const price = prices[symbol] || 0;
+                      const amount = price > 0 ? result.usd / price : 0;
+                      return (
+                        <div key={symbol} className="flex justify-between items-center py-2.5 border-b border-white/[0.05]">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-bold w-10 text-center bg-ink-800 text-ink-300 px-1.5 py-1 rounded-md">{symbol}</span>
+                            <span className="text-sm text-ink-200 truncate">{name}</span>
+                          </div>
+                          <span className="font-mono text-sm font-medium text-white tabular-nums">{formatCryptoAmount(amount)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
-              <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Purchasing Power Conversions</h3>
-                {isAssetsLoading ? (
-                  <p className="text-gray-500">Loading live prices...</p>
-                ) : (
-                  assets.map(({ symbol, name }) => {
-                    const price = prices[symbol] || 0;
-                    const amount = price > 0 ? result.usd / price : 0;
-                    return (
-                      <div key={symbol} className="flex justify-between items-center py-2 border-b border-gray-700/50 last:border-0">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-200">{name}</span>
-                          <span className="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-400">{symbol}</span>
-                        </div>
-                        <span className="font-mono font-medium text-white">
-                          {formatCryptoAmount(amount)}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
+              <div className="p-5 pt-4">
+                <button 
+                  onClick={saveSnap}
+                  className="w-full btn-gold shadow-glow font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+                >
+                  <Save size={20} />
+                  <span>Save to Vault</span>
+                </button>
               </div>
-
-              <button 
-                onClick={saveSnap}
-                className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl flex items-center justify-center space-x-2 transition-all transform hover:scale-[1.02]"
-              >
-                <Save size={20} />
-                <span>Save to Vault</span>
-              </button>
             </div>
           )}
         </div>

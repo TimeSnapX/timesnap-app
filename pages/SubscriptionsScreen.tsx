@@ -19,7 +19,7 @@ export default function SubscriptionsScreen() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">Choose Your Tier</h1>
+        <h1 className="font-semibold text-white mb-4">Choose Your Tier</h1>
         <p className="text-gray-400 mb-8">Unlock the full power of time preservation.</p>
         
         <div className="inline-flex bg-gray-800 p-1 rounded-xl">

@@ -8,7 +8,7 @@ export default function TokenScreen() {
         <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/20">
           <Coins size={48} className="text-white" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4">$TIME Token</h1>
+        <h1 className="text-[2.5rem] md:text-5xl font-semibold text-white mb-4">$TIME Token</h1>
         <p className="text-xl text-indigo-200 font-light">The Currency of Preservation</p>
       </div>
 

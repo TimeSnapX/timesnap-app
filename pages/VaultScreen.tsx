@@ -3,6 +3,7 @@ import { useSnapsStore } from '../stores/snapsStore';
 import { useAssets } from '../hooks/useAssets';
 import { Trash2, TrendingUp, TrendingDown, Clock, Edit2, Tag, X, ExternalLink, Info, Eye, Calendar } from 'lucide-react';
 import { Snap } from '../types';
+import { Link } from 'react-router-dom';
 
 export default function VaultScreen() {
   const { snaps, removeSnap, updateSnap } = useSnapsStore();
@@ -80,30 +81,34 @@ export default function VaultScreen() {
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex justify-between items-end">
+      <div>
+        <h1 className="text-white mb-2">Your Vault</h1>
+        <p className="text-ink-400">Your personal archive of captured value.</p>
+      </div>
+      <div className="card p-5 flex items-center justify-between bg-gradient-to-br from-gold-500/[0.12] via-ink-900/80 to-ink-900/80">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Your Vault</h1>
-          <p className="text-gray-400">Your personal archive of captured value.</p>
-        </div>
-        <div className="text-right">
-           <span className="text-gray-400 text-sm">Total Value Captured</span>
-           <div className="text-2xl font-bold text-white">
+           <span className="text-ink-300 text-xs uppercase tracking-wider font-semibold">Total Value Captured</span>
+           <div className="font-display text-4xl font-semibold text-gold-200 mt-1">
              ${snaps.reduce((acc, curr) => acc + curr.usdValue, 0).toLocaleString()}
            </div>
+        </div>
+        <div className="text-right">
+          <div className="font-display text-3xl font-semibold text-white">{snaps.length}</div>
+          <span className="text-ink-400 text-xs">{snaps.length === 1 ? 'item' : 'items'}</span>
         </div>
       </div>
 
       {snaps.length === 0 ? (
-        <div className="text-center py-20 bg-gray-900 rounded-2xl border border-gray-800">
-          <Clock className="mx-auto text-gray-600 mb-4" size={48} />
-          <h3 className="text-xl font-bold text-white mb-2">The Vault is Empty</h3>
+        <div className="text-center py-16 px-6 card">
+          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center"><Clock className="text-gold-400" size={30} /></div>
+          <h3 className="font-display text-2xl font-semibold text-white mb-2">The Vault is Empty</h3>
           <p className="text-gray-500 mb-6">Start by snapping an object to preserve its value.</p>
-          <a href="/" className="inline-block bg-indigo-600 px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+          <Link to="/" className="inline-flex items-center min-h-[48px] btn-gold shadow-glow px-6 rounded-2xl font-semibold">
             Go to Snap
-          </a>
+          </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {snaps.map((snap) => {
              // Display logic fallback
              const displayTitle = snap.title || snap.description.split(' - ')[0] || "Untitled";
@@ -113,34 +118,33 @@ export default function VaultScreen() {
               <div 
                 key={snap.id} 
                 onClick={() => setViewingSnap(snap)}
-                className="bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 flex flex-col md:flex-row shadow-lg group cursor-pointer hover:border-indigo-500/50 transition-colors"
+                className="card overflow-hidden flex flex-col group cursor-pointer hover:border-gold-500/40 transition-all active:scale-[0.99]"
               >
-                <div className="w-full md:w-48 h-48 md:h-auto bg-gray-900 relative flex-shrink-0">
+                <div className="w-full h-44 bg-ink-950 relative flex-shrink-0">
                   {snap.imageUri ? (
                      <img src={snap.imageUri} alt="Snap" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-600">No Image</div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                     <p className="text-xs text-white/80 text-center">{new Date(snap.timestamp).toLocaleDateString()}</p>
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/10 to-transparent" />
+                  <p className="absolute top-3 left-3 text-[11px] font-medium text-white/90 bg-ink-950/60 backdrop-blur px-2.5 py-1 rounded-full">{new Date(snap.timestamp).toLocaleDateString()}</p>
                 </div>
                 
-                <div className="flex-1 p-6 flex flex-col justify-between">
+                <div className="flex-1 p-4 pt-3 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-lg text-white line-clamp-1 mr-2" title={displayTitle}>{displayTitle}</h3>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => handleEditClick(snap, e)} 
-                          className="p-1 text-gray-500 hover:text-indigo-400 hover:bg-gray-700 rounded transition-colors"
+                          className="p-2.5 -my-1 text-ink-400 hover:text-gold-300 hover:bg-white/[0.06] rounded-xl transition-colors" aria-label="Edit"
                           title="Edit"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button 
                           onClick={(e) => handleDeleteClick(snap.id, e)} 
-                          className="p-1 text-gray-500 hover:text-red-500 hover:bg-gray-700 rounded transition-colors"
+                          className="p-2.5 -my-1 text-ink-400 hover:text-red-400 hover:bg-white/[0.06] rounded-xl transition-colors" aria-label="Delete"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -152,7 +156,7 @@ export default function VaultScreen() {
                     {snap.tags && snap.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-4">
                         {snap.tags.map(tag => (
-                          <span key={tag} className="text-[10px] bg-gray-700/50 text-gray-300 px-1.5 py-0.5 rounded border border-gray-600">
+                          <span key={tag} className="chip !text-[11px] !px-2 !py-0.5">
                              #{tag}
                           </span>
                         ))}
@@ -161,7 +165,7 @@ export default function VaultScreen() {
 
                     <div className="flex items-baseline space-x-2 mb-4">
                       <span className="text-xs text-gray-400 uppercase">Value at Snap</span>
-                      <span className="text-xl font-bold text-white">${snap.usdValue.toLocaleString()}</span>
+                      <span className="font-display text-2xl font-semibold text-gold-200">${snap.usdValue.toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -198,7 +202,7 @@ export default function VaultScreen() {
       {/* View Details Modal */}
       {viewingSnap && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-gray-800 w-full max-w-4xl rounded-2xl border border-gray-700 shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
+          <div className="bg-ink-900 w-full max-w-4xl rounded-3xl border border-white/[0.08] shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
             
             {/* Image Section */}
             <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative min-h-[300px] md:h-auto">
@@ -219,10 +223,10 @@ export default function VaultScreen() {
             </div>
 
             {/* Content Section */}
-            <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col overflow-y-auto custom-scrollbar bg-gray-800">
+            <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col overflow-y-auto custom-scrollbar bg-ink-900">
                <div className="flex justify-between items-start mb-4">
                  <div>
-                   <h2 className="text-3xl font-bold text-white mb-1">
+                   <h2 className="text-3xl font-semibold text-white mb-1">
                      {viewingSnap.title || "Untitled Item"}
                    </h2>
                    <div className="flex items-center text-gray-400 text-sm">
@@ -238,7 +242,7 @@ export default function VaultScreen() {
                  </button>
                </div>
 
-               <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mb-6">
+               <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 mb-6">
                   ${viewingSnap.usdValue.toLocaleString()} <span className="text-lg text-gray-400 font-normal">USD</span>
                </div>
 
@@ -329,7 +333,7 @@ export default function VaultScreen() {
                  </div>
                </div>
 
-               <div className="mt-8 flex gap-3 pt-4 border-t border-gray-700 sticky bottom-0 bg-gray-800">
+               <div className="mt-8 flex gap-3 pt-4 border-t border-gray-700 sticky bottom-0 bg-ink-900">
                   <button 
                     onClick={() => handleEditClick(viewingSnap)}
                     className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center"
