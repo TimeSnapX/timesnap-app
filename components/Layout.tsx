@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Camera, Wallet, Map, Coins, CreditCard, HelpCircle, Eye, LayoutGrid, ChevronRight } from 'lucide-react';
+import { X, Camera, Wallet, Map, Coins, CreditCard, HelpCircle, Eye, LayoutGrid, ChevronRight, Banknote } from 'lucide-react';
+import { CurrencyChip, CurrencyPicker } from './CurrencyPicker';
+import { useCurrencyStore, useCurrency } from '../stores/currencyStore';
 
 const navItems = [
   { to: '/', icon: Camera, label: 'Snap & Estimate', short: 'Snap' },
@@ -35,12 +37,23 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const moreActive = MORE.some((n) => isActive(path, n.to));
 
   useEffect(() => { setMoreOpen(false); window.scrollTo(0, 0); }, [path]);
+  const loadRates = useCurrencyStore((s) => s.loadRates);
+  const openPicker = useCurrencyStore((s) => s.openPicker);
+  const { chosen } = useCurrency();
+  useEffect(() => {
+    loadRates();
+    const t = setInterval(() => loadRates(), 60 * 60 * 1000);
+    const on = () => loadRates();
+    window.addEventListener('online', on);
+    return () => { clearInterval(t); window.removeEventListener('online', on); };
+  }, [loadRates]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row text-white">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-white/[0.06] bg-ink-950/60 backdrop-blur-xl p-4 sticky top-0 h-screen overflow-y-auto">
-        <div className="mb-8 px-3 pt-2"><Logo /></div>
+        <div className="mb-6 px-3 pt-2"><Logo /></div>
+        <div className="px-3 mb-6"><CurrencyChip /></div>
         <nav className="flex-1 space-y-1" aria-label="Main">
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = isActive(path, to);
@@ -60,7 +73,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <header className="md:hidden sticky top-0 z-40 glass border-x-0 border-t-0 pt-safe">
         <div className="h-14 px-4 flex items-center justify-between">
           <Logo size="sm" />
-          <span className="text-xs font-medium text-ink-400 uppercase tracking-widest">{current?.short}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-ink-400 uppercase tracking-widest">{current?.short}</span>
+            <CurrencyChip />
+          </div>
         </div>
       </header>
 
@@ -111,10 +127,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <ChevronRight size={18} className="text-ink-500" />
                 </Link>
               ))}
+              <button type="button" onClick={() => { setMoreOpen(false); openPicker(true); }}
+                className="w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl text-ink-200 active:bg-white/[0.05] text-left">
+                <span className="w-9 h-9 rounded-xl bg-white/[0.05] flex items-center justify-center"><Banknote size={18} /></span>
+                <span className="flex-1 font-medium">Currency</span>
+                <span className="text-sm text-gold-300 font-semibold">{chosen}</span>
+                <ChevronRight size={18} className="text-ink-500" />
+              </button>
             </div>
           </div>
         </div>
       )}
+      <CurrencyPicker />
     </div>
   );
 };

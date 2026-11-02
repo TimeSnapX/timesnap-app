@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Check, Package, Smartphone } from 'lucide-react';
+import { useCurrency } from '../stores/currencyStore';
 
 const digitalTiers = [
   { name: 'Silver', price: 2.99, color: 'border-gray-400', features: ['Snap → USD estimate (10/mo)', 'Convert to 1 asset', 'Basic snapshot history'] },
@@ -15,6 +16,7 @@ const physicalTiers = [
 
 export default function SubscriptionsScreen() {
   const [activeTab, setActiveTab] = useState<'digital' | 'physical'>('digital');
+  const currency = useCurrency();
 
   return (
     <div className="space-y-8">
@@ -50,11 +52,12 @@ export default function SubscriptionsScreen() {
              <div className="mb-4">
                <h3 className="text-xl font-bold text-white">{tier.name}</h3>
                <div className="flex items-baseline mt-2">
-                 <span className="text-3xl font-extrabold text-white">${tier.price.toLocaleString()}</span>
+                 <span className="text-3xl font-extrabold text-white">{currency.format(tier.price)}</span>
                  <span className="text-gray-400 ml-1">/mo</span>
                </div>
+               {currency.code !== 'USD' && <p className="text-xs text-ink-400 mt-1">approx., billed in USD (${tier.price.toLocaleString()})</p>}
                {'value' in tier && (
-                 <p className="text-green-400 text-sm mt-1 font-medium">Est. Value Delivered: ${tier.value}</p>
+                 <p className="text-green-400 text-sm mt-1 font-medium">Est. Value Delivered: {currency.format(tier.value as number)}</p>
                )}
              </div>
 

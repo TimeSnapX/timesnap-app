@@ -5,6 +5,8 @@ import { useSnapsStore } from '../stores/snapsStore';
 import { analyzeImage } from '../services/geminiService';
 import { useNavigate } from 'react-router-dom';
 import { downscaleImage } from '../services/imageUtils';
+import { useCurrency } from '../stores/currencyStore';
+import { RatesNote } from '../components/CurrencyPicker';
 
 export default function SnapScreen() {
   const [image, setImage] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export default function SnapScreen() {
   const { prices, assets, isLoading: isAssetsLoading } = useAssets();
   const { addSnap } = useSnapsStore();
   const navigate = useNavigate();
+  const currency = useCurrency();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -202,10 +205,12 @@ export default function SnapScreen() {
                 <h2 className="text-2xl font-semibold text-white leading-snug">{result.name}</h2>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-display text-5xl font-semibold text-transparent bg-clip-text bg-gradient-to-br from-gold-100 via-gold-300 to-gold-500">
-                    ${result.usd.toLocaleString()}
+                    {currency.format(result.usd)}
                   </span>
-                  <span className="text-sm text-ink-400 font-medium">USD</span>
+                  <span className="text-sm text-ink-400 font-medium">{currency.code}</span>
                 </div>
+                {currency.code !== 'USD' && <p className="text-xs text-ink-400 mt-1">≈ ${result.usd.toLocaleString()} USD estimate</p>}
+                <RatesNote className="mt-1" />
                 <p className="text-ink-300 mt-3 text-sm leading-relaxed">{result.description}</p>
 
                 {result.tags && result.tags.length > 0 && (

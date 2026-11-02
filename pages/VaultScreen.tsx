@@ -4,10 +4,13 @@ import { useAssets } from '../hooks/useAssets';
 import { Trash2, TrendingUp, TrendingDown, Clock, Edit2, Tag, X, ExternalLink, Info, Eye, Calendar } from 'lucide-react';
 import { Snap } from '../types';
 import { Link } from 'react-router-dom';
+import { useCurrency, currencyDigits } from '../stores/currencyStore';
+import { RatesNote } from '../components/CurrencyPicker';
 
 export default function VaultScreen() {
   const { snaps, removeSnap, updateSnap } = useSnapsStore();
   const { prices, assets } = useAssets();
+  const currency = useCurrency();
   
   const [editingSnap, setEditingSnap] = useState<Snap | null>(null);
   const [viewingSnap, setViewingSnap] = useState<Snap | null>(null);
@@ -27,7 +30,8 @@ export default function VaultScreen() {
     const desc = snap.title ? snap.description : (snap.description.includes(' - ') ? snap.description.split(' - ')[1] : snap.description);
     
     setEditTitle(title);
-    setEditUsd(snap.usdValue.toString());
+    const d = currencyDigits(currency.code);
+    setEditUsd(String(Math.round(currency.fromUsd(snap.usdValue) * 10 ** d) / 10 ** d));
     setEditDesc(desc);
     setEditTags(snap.tags || []);
     
@@ -46,7 +50,8 @@ export default function VaultScreen() {
   const handleSaveEdit = () => {
     if (!editingSnap) return;
     
-    const usdValue = parseFloat(editUsd) || 0;
+    // Edited in the display currency; stored back as USD
+    const usdValue = currency.toUsd(parseFloat(editUsd) || 0);
     
     updateSnap(editingSnap.id, {
       title: editTitle,
@@ -89,8 +94,9 @@ export default function VaultScreen() {
         <div>
            <span className="text-ink-300 text-xs uppercase tracking-wider font-semibold">Total Value Captured</span>
            <div className="font-display text-4xl font-semibold text-gold-200 mt-1">
-             ${snaps.reduce((acc, curr) => acc + curr.usdValue, 0).toLocaleString()}
+             {currency.format(snaps.reduce((acc, curr) => acc + curr.usdValue, 0))}
            </div>
+           <RatesNote className="mt-1" />
         </div>
         <div className="text-right">
           <div className="font-display text-3xl font-semibold text-white">{snaps.length}</div>
@@ -165,7 +171,7 @@ export default function VaultScreen() {
 
                     <div className="flex items-baseline space-x-2 mb-4">
                       <span className="text-xs text-gray-400 uppercase">Value at Snap</span>
-                      <span className="font-display text-2xl font-semibold text-gold-200">${snap.usdValue.toLocaleString()}</span>
+                      <span className="font-display text-2xl font-semibold text-gold-200">{currency.format(snap.usdValue)}</span>
                     </div>
                   </div>
 
@@ -243,7 +249,7 @@ export default function VaultScreen() {
                </div>
 
                <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 mb-6">
-                  ${viewingSnap.usdValue.toLocaleString()} <span className="text-lg text-gray-400 font-normal">USD</span>
+                  {currency.format(viewingSnap.usdValue)} <span className="text-lg text-gray-400 font-normal">{currency.code}</span>
                </div>
 
                <div className="space-y-6 flex-1">
@@ -320,7 +326,7 @@ export default function VaultScreen() {
                                   </div>
                                </div>
                                <div className="text-right">
-                                  <div className="text-sm font-bold text-white">${currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                  <div className="text-sm font-bold text-white">{currency.format(currentValue)}</div>
                                   <div className={`text-xs font-bold flex items-center justify-end ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
                                      {isProfit ? <TrendingUp size={10} className="mr-1" /> : <TrendingDown size={10} className="mr-1" />}
                                      {Math.abs(changePct).toFixed(2)}%
@@ -375,7 +381,7 @@ export default function VaultScreen() {
               </div>
               
               <div>
-                <label className="block text-sm text-gray-400 mb-1">USD Value</label>
+                <label className="block text-sm text-gray-400 mb-1">{currency.code} Value</label>
                 <input 
                   type="number" 
                   value={editUsd}
