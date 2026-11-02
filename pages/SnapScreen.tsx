@@ -107,6 +107,24 @@ export default function SnapScreen() {
         
         {/* Left Col: Upload/Preview */}
         <div className="flex flex-col space-y-4">
+          {/* Inputs live outside the clickable drop zone so programmatic clicks can't bubble into it */}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            capture="environment"
+            onChange={handleFileChange} 
+            onClick={(e) => e.stopPropagation()}
+          />
+          <input 
+            type="file" 
+            ref={galleryInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleFileChange} 
+            onClick={(e) => e.stopPropagation()}
+          />
           <div 
             className={`
               border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 transition-colors
@@ -115,21 +133,6 @@ export default function SnapScreen() {
             `}
             onClick={() => !loading && !image && fileInputRef.current?.click()}
           >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              capture="environment"
-              onChange={handleFileChange} 
-            />
-            <input 
-              type="file" 
-              ref={galleryInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleFileChange} 
-            />
             
             {image ? (
               <>
@@ -150,14 +153,26 @@ export default function SnapScreen() {
                 <p className="text-gray-400 text-sm max-w-xs mx-auto">
                   Click or tap here to upload an image of the item you want to value.
                 </p>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); galleryInputRef.current?.click(); }}
-                  className="mt-4 inline-flex items-center space-x-2 px-4 py-2 rounded-xl border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 text-sm"
-                >
-                  <Upload size={16} />
-                  <span>Choose from gallery</span>
-                </button>
+                <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    type="button"
+                    data-testid="take-photo"
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm"
+                  >
+                    <Camera size={18} />
+                    <span>Take photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="choose-gallery"
+                    onClick={(e) => { e.stopPropagation(); galleryInputRef.current?.click(); }}
+                    className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl border border-gray-600 text-gray-200 hover:text-white hover:bg-gray-800 font-semibold text-sm"
+                  >
+                    <Upload size={18} />
+                    <span>Choose from gallery</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

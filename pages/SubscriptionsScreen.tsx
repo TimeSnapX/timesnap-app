@@ -76,7 +76,7 @@ export default function SubscriptionsScreen() {
       
       {activeTab === 'physical' && (
         <p className="text-center text-gray-500 text-sm mt-4">
-          * Physical subscriptions are fulfilled by our partners at Liberty Bullion. Shipping restrictions may apply.
+          * Physical subscriptions are coming soon. Shipping restrictions may apply.
         </p>
       )}
     </div>

@@ -20,7 +20,7 @@ const faqs = [
   },
   {
     q: 'Can I actually buy Gold through the app?',
-    a: 'Not yet directly in the digital app, but our "Physical" subscription tiers provide a concierge service via our partner Liberty Bullion to ship physical metals to your door.',
+    a: 'Not yet directly in the digital app, but physical metal delivery through our "Physical" subscription tiers is coming soon.',
   },
 ];
 
@@ -40,19 +40,6 @@ export default function FAQScreen() {
         ))}
       </div>
 
-      <div className="mt-12 bg-gray-900 p-8 rounded-2xl border border-gray-800">
-        <h2 className="text-xl font-bold text-white mb-4">Strategic Partners</h2>
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-yellow-600/20 rounded-full flex items-center justify-center text-yellow-500 font-bold border border-yellow-600/50">
-            LB
-          </div>
-          <div>
-            <h3 className="font-bold text-white">Liberty Bullion</h3>
-            <p className="text-sm text-gray-500">Melbourne, Australia</p>
-            <p className="text-sm text-gray-400 mt-1">Official fulfillment partner for physical precious metal subscriptions.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
