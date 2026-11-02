@@ -2,6 +2,7 @@ name = "timesnap-api"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
+preview_urls = false
 
 # Secret (never commit): wrangler secret put GEMINI_API_KEY
 # Local dev: put GEMINI_API_KEY=... in worker/.dev.vars (gitignored)

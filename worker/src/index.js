@@ -54,7 +54,7 @@ function corsHeaders(origin, env) {
   const allowed = (env.ALLOWED_ORIGINS || 'https://timesnapx.github.io').split(',').map((s) => s.trim());
   const ok = origin && (allowed.includes(origin) || LOCAL_ORIGIN.test(origin));
   return ok
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 
@@ -90,12 +90,68 @@ async function callGemini(apiKey, contents, withSearch) {
   return data;
 }
 
+
+// ---- Market quotes proxy (Yahoo Finance spark, keyless). Fixed symbol sets only; edge-cached. ----
+const QUOTE_SETS = {
+  stocks: ['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B','AVGO','TSM','JPM','V','MA','UNH','XOM','JNJ','WMT','PG','HD','COST','ORCL','NFLX','AMD','KO','DIS','BAC',
+    'SPY','QQQ','BHP.AX','CBA.AX','CSL.AX'],
+  commodities: ['GC=F','SI=F','PL=F','PA=F','HG=F','CL=F','BZ=F','NG=F','ZW=F','ZC=F','KC=F','SB=F'],
+};
+const QUOTE_TTL = 600; // seconds
+
+async function fetchSpark(symbols) {
+  const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(symbols.join(','))}&range=1d&interval=1d`;
+  const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TimeSnap/1.0)', Accept: 'application/json' } });
+  if (!r.ok) throw new HttpError(502, `Quote source returned ${r.status}`);
+  const d = await r.json();
+  return (d?.spark?.result || []).map((x) => {
+    const m = x?.response?.[0]?.meta || {};
+    const price = m.regularMarketPrice;
+    const prev = m.chartPreviousClose ?? m.previousClose;
+    return {
+      symbol: x.symbol,
+      name: m.longName || m.shortName || x.symbol,
+      price: typeof price === 'number' ? price : null,
+      currency: m.currency || 'USD',
+      changePct: typeof m.regularMarketChangePercent === 'number' ? m.regularMarketChangePercent : (price && prev ? ((price - prev) / prev) * 100 : null),
+      time: m.regularMarketTime ? m.regularMarketTime * 1000 : null,
+      exchange: m.fullExchangeName || m.exchangeName || null,
+    };
+  }).filter((q) => q.price !== null);
+}
+
+async function handleQuotes(request, url, cors, ctx) {
+  const set = url.searchParams.get('set');
+  const symbols = QUOTE_SETS[set];
+  if (!symbols) return json({ error: 'Unknown set' }, 400, cors);
+  const cache = caches.default;
+  const key = new Request(`https://timesnap-cache.internal/quotes/${set}`);
+  let hit = await cache.match(key);
+  let body;
+  if (hit) body = await hit.text();
+  else {
+    const chunks = [];
+    for (let i = 0; i < symbols.length; i += 20) chunks.push(symbols.slice(i, i + 20));
+    const parts = await Promise.all(chunks.map(fetchSpark));
+    body = JSON.stringify({ set, asOf: Date.now(), source: 'Yahoo Finance (via TimeSnap worker)', quotes: parts.flat() });
+    ctx.waitUntil(cache.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${QUOTE_TTL}` } })));
+  }
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${QUOTE_TTL}`, 'X-Cache': hit ? 'HIT' : 'MISS', ...cors } });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
     const cors = corsHeaders(origin, env);
 
+    if (url.pathname === '/api/quotes') {
+      if (request.method === 'OPTIONS') return new Response(null, { status: cors['Access-Control-Allow-Origin'] ? 204 : 403, headers: { ...cors, 'Access-Control-Allow-Methods': 'GET, OPTIONS' } });
+      if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, cors);
+      if (origin && !cors['Access-Control-Allow-Origin']) return json({ error: 'Origin not allowed' }, 403, cors);
+      try { return await handleQuotes(request, url, cors, ctx); }
+      catch (e) { return json({ error: e.message || 'Quote fetch failed' }, e.status || 502, cors); }
+    }
     if (url.pathname !== '/api/analyze-image') return json({ error: 'API endpoint not found' }, 404, cors);
     if (request.method === 'OPTIONS') return new Response(null, { status: cors['Access-Control-Allow-Origin'] ? 204 : 403, headers: cors });
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors);

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { downscaleImage } from '../services/imageUtils';
 import { useCurrency } from '../stores/currencyStore';
 import { RatesNote } from '../components/CurrencyPicker';
+import { MarketsPanel } from '../components/MarketsPanel';
 import { InstallBanner } from '../components/Install';
 
 export default function SnapScreen() {
@@ -252,28 +253,7 @@ export default function SnapScreen() {
                 </div>
               )}
 
-              <div className="px-5 pb-2 border-t border-white/[0.06] pt-4">
-                <h3 className="text-[11px] font-semibold text-gold-400 uppercase tracking-wider mb-1">Purchasing Power Conversions</h3>
-                {isAssetsLoading ? (
-                  <p className="text-ink-400 py-3 text-sm">Loading live prices...</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-6">
-                    {assets.map(({ symbol, name }) => {
-                      const price = prices[symbol] || 0;
-                      const amount = price > 0 ? result.usd / price : 0;
-                      return (
-                        <div key={symbol} className="flex justify-between items-center py-2.5 border-b border-white/[0.05]">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[10px] font-bold w-10 text-center bg-ink-800 text-ink-300 px-1.5 py-1 rounded-md">{symbol}</span>
-                            <span className="text-sm text-ink-200 truncate">{name}</span>
-                          </div>
-                          <span className="font-mono text-sm font-medium text-white tabular-nums">{formatCryptoAmount(amount)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <MarketsPanel usd={result.usd} />
 
               <div className="p-5 pt-4">
                 <button 
