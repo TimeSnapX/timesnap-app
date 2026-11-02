@@ -1,7 +1,7 @@
 // Single place to configure the analysis backend (Cloudflare Worker in ./worker).
-// PLACEHOLDER until the worker is deployed. Replace with e.g. https://timesnap-api.<subdomain>.workers.dev
+// Deployed Cloudflare Worker (worker/). 
 // For local dev/testing you can override with ?api=http://localhost:8787 (stored in sessionStorage).
-const DEFAULT_API_BASE = 'https://timesnap-api.REPLACE-ME.workers.dev';
+const DEFAULT_API_BASE = 'https://timesnap-api.timesnapx.workers.dev';
 
 function resolveApiBase(): string {
   try {
