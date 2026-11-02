@@ -4,7 +4,7 @@
 //   4xx/5xx -> { error: string }
 // Same model, prompt, JSON schema and Google Search grounding (with 429 fallback without search) as server.ts.
 
-const MODEL = 'gemini-3-flash-preview';
+const MODEL = 'gemini-2.5-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const PROMPT = `Identify the main object in this image. 
@@ -25,6 +25,27 @@ const RESPONSE_SCHEMA = {
   },
   required: ['name', 'usdValue', 'description', 'tags'],
 };
+
+const SCHEMA_HINT = `
+            Respond with ONLY a single JSON object (no markdown, no code fences) matching this JSON schema:
+            ${JSON.stringify(RESPONSE_SCHEMA)}`;
+
+function parseResult(text) {
+  let t = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+  let obj;
+  try { obj = JSON.parse(t); } catch {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a < 0 || b <= a) throw new Error('AI response was not valid JSON');
+    obj = JSON.parse(t.slice(a, b + 1));
+  }
+  if (typeof obj.usdValue === 'string') obj.usdValue = Number(obj.usdValue.replace(/[^0-9.\-]/g, ''));
+  if (typeof obj.name !== 'string' || !obj.name || typeof obj.description !== 'string' || !Array.isArray(obj.tags) || !Number.isFinite(obj.usdValue)) {
+    throw new Error('AI response missing required fields');
+  }
+  const out = { name: obj.name, usdValue: obj.usdValue, description: obj.description, tags: obj.tags.map(String) };
+  if (typeof obj.valuationReasoning === 'string') out.valuationReasoning = obj.valuationReasoning;
+  return out;
+}
 
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const buckets = new Map(); // best-effort per-isolate rate limit
@@ -54,11 +75,11 @@ function rateLimited(ip, env) {
 class HttpError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 
 async function callGemini(apiKey, contents, withSearch) {
-  const body = {
-    contents: [contents],
-    generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA },
-  };
-  if (withSearch) body.tools = [{ googleSearch: {} }];
+  // gemini-2.5 rejects responseMimeType/responseSchema combined with tools, so with
+  // google_search grounding the schema goes in the prompt and JSON is parsed from text.
+  const body = withSearch
+    ? { contents: [{ ...contents, parts: [contents.parts[0], { text: contents.parts[1].text + SCHEMA_HINT }] }], tools: [{ google_search: {} }] }
+    : { contents: [contents], generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA } };
   const res = await fetch(GEMINI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -113,7 +134,7 @@ export default {
       const cand = response?.candidates?.[0];
       const text = (cand?.content?.parts || []).filter((p) => typeof p.text === 'string' && !p.thought).map((p) => p.text).join('');
       if (!text) throw new Error('No response from AI');
-      const result = JSON.parse(text);
+      const result = parseResult(text);
 
       const chunks = cand?.groundingMetadata?.groundingChunks || [];
       const sources = chunks.filter((c) => c.web?.uri).map((c) => ({ title: c.web?.title || 'Source', uri: c.web?.uri || '' }));

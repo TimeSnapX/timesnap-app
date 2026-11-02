@@ -2,9 +2,9 @@
 import worker from './src/index.js';
 const calls = [];
 globalThis.fetch = async (url, init) => {
-  const b = JSON.parse(init.body); calls.push({ url, tools: b.tools, schema: !!b.generationConfig.responseSchema, key: init.headers['x-goog-api-key'] });
+  const b = JSON.parse(init.body); calls.push({ url, tools: b.tools, schema: !!b.generationConfig?.responseSchema, key: init.headers['x-goog-api-key'] });
   if (b.tools && process.env.SIM429) return new Response('{"error":{"message":"quota"}}', { status: 429 });
-  return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"name":"STUB","usdValue":1,"description":"stub","tags":["a"],"valuationReasoning":"stub"}' }] }, groundingMetadata: { groundingChunks: [{ web: { uri: 'https://e.x/1', title: 'E' } }, { web: { uri: 'https://e.x/1', title: 'dup' } }] } }] }));
+  return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '```json\n{"name":"STUB","usdValue":"$1","description":"stub","tags":["a"],"valuationReasoning":"stub"}\n```' }] }, groundingMetadata: { groundingChunks: [{ web: { uri: 'https://e.x/1', title: 'E' } }, { web: { uri: 'https://e.x/1', title: 'dup' } }] } }] }));
 };
 const env = { GEMINI_API_KEY: 'test-key', ALLOWED_ORIGINS: 'https://timesnapx.github.io', MAX_BODY_BYTES: '8388608', RATE_LIMIT_PER_MINUTE: '3' };
 const mk = (o, body) => new Request('https://w/api/analyze-image', { method: 'POST', headers: { Origin: o, 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.' + Math.random() }, body });
