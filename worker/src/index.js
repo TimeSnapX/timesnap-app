@@ -139,17 +139,51 @@ async function handleQuotes(request, url, cors, ctx) {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${QUOTE_TTL}`, 'X-Cache': hit ? 'HIT' : 'MISS', ...cors } });
 }
 
+// ---- Price history proxy (Yahoo v8 chart). Symbol must be in the fixed quote sets or a COIN-USD crypto pair
+// (used for crypto 5Y, which CoinGecko's keyless API no longer serves). Edge-cached 10-30 min. ----
+const CHART_SYMBOLS = new Set([...QUOTE_SETS.stocks, ...QUOTE_SETS.commodities]);
+const CHART_RANGES = { '1d': ['1d', '5m', 600], '7d': ['5d', '30m', 900], '1m': ['1mo', '1d', 1800], '1y': ['1y', '1d', 1800], '5y': ['5y', '1wk', 1800], max: ['max', '1mo', 1800] };
+
+async function handleChart(url, cors, ctx) {
+  const symbol = url.searchParams.get('symbol') || '';
+  const range = (url.searchParams.get('range') || '').toLowerCase();
+  if (!/^[A-Z0-9.=\-]{1,12}$/.test(symbol) || !(CHART_SYMBOLS.has(symbol) || /^[A-Z0-9]{2,10}-USD$/.test(symbol))) return json({ error: 'Unknown symbol' }, 400, cors);
+  const cfg = CHART_RANGES[range];
+  if (!cfg) return json({ error: 'Unknown range' }, 400, cors);
+  const cache = caches.default;
+  const key = new Request(`https://timesnap-cache.internal/chart/${encodeURIComponent(symbol)}/${range}`);
+  const hit = await cache.match(key);
+  let body;
+  if (hit) body = await hit.text();
+  else {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${cfg[0]}&interval=${cfg[1]}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TimeSnap/1.0)', Accept: 'application/json' } });
+    if (!r.ok) throw new HttpError(502, `Chart source returned ${r.status}`);
+    const d = await r.json();
+    const res = d?.chart?.result?.[0];
+    const ts = res?.timestamp || []; const cl = res?.indicators?.quote?.[0]?.close || [];
+    const points = [];
+    for (let i = 0; i < ts.length; i++) if (typeof cl[i] === 'number' && isFinite(cl[i])) points.push([ts[i] * 1000, cl[i]]);
+    if (points.length < 2) throw new HttpError(502, 'No chart data');
+    const m = res.meta || {};
+    if (typeof m.regularMarketPrice === 'number' && m.regularMarketTime && m.regularMarketTime * 1000 > points[points.length - 1][0]) points.push([m.regularMarketTime * 1000, m.regularMarketPrice]);
+    body = JSON.stringify({ symbol, range, currency: m.currency || 'USD', asOf: Date.now(), source: 'Yahoo Finance (via TimeSnap worker)', points });
+    ctx.waitUntil(cache.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${cfg[2]}` } })));
+  }
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${cfg[2]}`, 'X-Cache': hit ? 'HIT' : 'MISS', ...cors } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
     const cors = corsHeaders(origin, env);
 
-    if (url.pathname === '/api/quotes') {
+    if (url.pathname === '/api/quotes' || url.pathname === '/api/chart') {
       if (request.method === 'OPTIONS') return new Response(null, { status: cors['Access-Control-Allow-Origin'] ? 204 : 403, headers: { ...cors, 'Access-Control-Allow-Methods': 'GET, OPTIONS' } });
       if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405, cors);
       if (origin && !cors['Access-Control-Allow-Origin']) return json({ error: 'Origin not allowed' }, 403, cors);
-      try { return await handleQuotes(request, url, cors, ctx); }
+      try { return url.pathname === '/api/chart' ? await handleChart(url, cors, ctx) : await handleQuotes(request, url, cors, ctx); }
       catch (e) { return json({ error: e.message || 'Quote fetch failed' }, e.status || 502, cors); }
     }
     if (url.pathname !== '/api/analyze-image') return json({ error: 'API endpoint not found' }, 404, cors);

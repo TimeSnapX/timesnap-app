@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useMarkets, Kind, MarketAsset } from '../services/markets';
 import { useCurrency, useCurrencyStore } from '../stores/currencyStore';
+import { AssetChartSheet } from './AssetChartSheet';
 
 const TABS: { k: Kind; label: string }[] = [{ k: 'crypto', label: 'Crypto' }, { k: 'stocks', label: 'Stocks' }, { k: 'commodities', label: 'Commodities' }];
 
@@ -15,6 +16,7 @@ function fmtUnits(n: number) {
 export function MarketsPanel({ usd }: { usd: number }) {
   const [tab, setTab] = useState<Kind>('crypto');
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState<MarketAsset | null>(null);
   const feeds = useMarkets((s) => s.feeds);
   const load = useMarkets((s) => s.load);
   const rates = useCurrencyStore((s) => s.rates);
@@ -47,7 +49,7 @@ export function MarketsPanel({ usd }: { usd: number }) {
       </p>
       <div className="max-h-[420px] overflow-y-auto" data-testid="market-list">
         {items.map((a: MarketAsset) => (
-          <div key={a.key} className="flex justify-between items-center py-2 border-b border-white/[0.05] gap-2" data-row={a.kind}>
+          <button type="button" key={a.key} onClick={() => setOpen(a)} aria-label={`${a.name} price chart`} className="w-full text-left flex justify-between items-center py-2 border-b border-white/[0.05] gap-2 active:bg-white/[0.04]" data-row={a.kind} data-key={a.key}>
             <div className="flex items-center gap-2 min-w-0">
               {a.image ? <img src={a.image} alt="" className="w-5 h-5 rounded-full" loading="lazy" /> : <span className="text-[10px] font-bold bg-ink-800 text-ink-300 px-1.5 py-1 rounded-md">{a.symbol}</span>}
               <div className="min-w-0">
@@ -58,11 +60,12 @@ export function MarketsPanel({ usd }: { usd: number }) {
             <span className="font-mono text-sm text-white tabular-nums text-right whitespace-nowrap">
               = {fmtUnits(usd / a.priceUsd)} <span className="text-ink-400 text-xs">{a.kind === 'commodities' ? a.unit : a.kind === 'stocks' ? 'sh' : a.symbol}</span>
             </span>
-          </div>
+          </button>
         ))}
         {feed.status !== 'loading' && !items.length && <p className="text-sm text-ink-400 py-3">{feed.status === 'error' ? 'Unavailable — no prices shown rather than guessing.' : 'No matches.'}</p>}
       </div>
       <p className="text-[10px] text-ink-500 mt-2">Indicative only, not financial advice. Quotes may be delayed.</p>
+      {open && <AssetChartSheet asset={open} usd={usd} onClose={() => setOpen(null)} />}
     </div>
   );
 }
